@@ -14,6 +14,9 @@
             background-size: 16px 16px;
             color: #e2e8f0; /* slate-200 */
             overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            transform: scale(0.75);
         }
         .card {
             width: 100px;
@@ -22,7 +25,7 @@
             background-size: cover;
             background-position: center;
             cursor: pointer;
-            transition: transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.6s cubic-bezier(0.25, 1, 0.5, 1), filter 0.3s ease;
             position: relative;
             box-shadow: 0 5px 10px rgba(0,0,0,0.4);
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -58,13 +61,8 @@
             width: 100px;
             height: 150px;
             cursor: default;
-            animation: flipIn 0.6s cubic-bezier(0.25, 1, 0.5, 1);
         }
-        @keyframes flipIn {
-            from { transform: rotateY(90deg) scale(0.8); opacity: 0; }
-            to { transform: rotateY(0deg) scale(1); opacity: 1; }
-        }
-
+        
         .modal {
             display: none;
             position: fixed;
@@ -88,7 +86,7 @@
             border-radius: 12px;
             text-align: center;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            animation: zoomIn 0.3s ease-out;
+            animation: zoomIn 0.4s ease-out;
         }
         @keyframes zoomIn {
             from { transform: scale(0.9); opacity: 0; }
@@ -96,16 +94,17 @@
         }
 
         .info-box {
-            background-color: rgba(30, 41, 59, 0.8); /* slate-800 with opacity */
+            background-color: rgba(30, 41, 59, 0.9); 
             padding: 0.75rem 1.25rem;
-            border-radius: 10px;
-            border: 1px solid #334155; /* slate-700 */
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
+            border-radius: 12px;
+            border: 1px solid #334155; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: all 0.4s ease;
+            flex-shrink: 0;
         }
         .info-box.active-player {
-            border-color: #facc15;
-            box-shadow: 0 0 15px rgba(250, 204, 21, 0.5);
+            box-shadow: 0 0 20px rgba(250, 204, 21, 0.6);
+            transform: scale(1.05);
         }
         .game-table {
             position: absolute;
@@ -130,6 +129,77 @@
             left: 50%;
             transform: translate(-50%, -50%);
         }
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .game-table {
+                display: none;
+            }
+            .card, .played-card {
+                width: 80px;
+                height: 120px;
+            }
+            #main-hand-area {
+                space-x: -40px !important;
+            }
+            .info-box {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+            .info-box h2 {
+                font-size: 1rem;
+            }
+            .info-box p {
+                font-size: 0.85rem;
+            }
+            #game-header {
+                gap: 0.5rem;
+            }
+        }
+        @media (max-width: 600px) {
+            .card, .played-card {
+                width: 65px;
+                height: 97px;
+            }
+            #main-hand-area {
+                space-x: -35px !important;
+            }
+            #game-header {
+                flex-direction: column;
+                align-items: center;
+                gap: 0.5rem;
+            }
+            #game-header .info-box {
+                width: 80%;
+                margin-bottom: 0.5rem;
+            }
+            #game-header .center-info {
+                width: 100%;
+                order: -1;
+            }
+            .info-box {
+                padding: 0.5rem;
+                font-size: 0.75rem;
+            }
+             .info-box h2 {
+                font-size: 0.9rem;
+            }
+            .info-box p {
+                font-size: 0.75rem;
+            }
+            #action-button {
+                padding: 0.75rem 1.5rem;
+                font-size: 1rem;
+            }
+        }
+        @media (max-width: 380px) {
+            .card, .played-card {
+                width: 50px;
+                height: 75px;
+            }
+            #main-hand-area {
+                space-x: -25px !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-200">
@@ -144,27 +214,27 @@
         </div>
     </div>
 
-    <div id="game-board" class="hidden h-screen flex flex-col p-4 relative">
+    <div id="game-board" class="hidden h-screen flex flex-col p-2 md:p-4 relative">
         <div class="game-table"></div>
         <div id="deck-pile" class="hidden"></div>
         <button onclick="location.reload()" class="absolute top-4 left-4 bg-red-600 hover:bg-red-500 text-white font-bold p-2 rounded-full shadow-md z-20">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
         </button>
-        <header class="grid grid-cols-3 gap-4 text-center items-start p-2 z-10">
-            <div id="player-2-info" class="info-box text-left w-full">
-                <h2 id="player-2-name" class="text-lg font-bold">Player 2</h2>
-                <p>Score: <span id="player-2-score">0</span></p>
-                <p>Bid: <span id="player-2-bid">-</span> | Tricks: <span id="player-2-tricks">0</span></p>
+        <header id="game-header" class="flex justify-between items-center w-full gap-2 md:gap-4 p-2 z-10">
+            <div id="player-2-info" class="info-box text-center">
+                <h2 id="player-2-name" class="text-xl font-bold">Player 2</h2>
+                <p class="text-xl">Score: <span id="player-2-score" class="font-bold">0</span></p>
+                <p class="text-xl">Bid: <span id="player-2-bid" class="font-bold">-</span> | Tricks: <span id="player-2-tricks" class="font-bold">0</span></p>
             </div>
-            <div class="info-box">
-                <h2 class="text-xl font-bold">Round <span id="round-number">1</span></h2>
-                <p>Trump: <span id="trump-suit" class="text-2xl font-bold"></span></p>
-                <p class="text-sm text-slate-400">Dealer: <span id="dealer-name"></span></p>
+            <div class="info-box text-center center-info">
+                <h2 class="text-2xl font-bold">Round <span id="round-number">1</span></h2>
+                <p>Trump: <span id="trump-suit" class="text-4xl font-bold"></span></p>
+                <p class="text-md text-slate-400">Dealer: <span id="dealer-name"></span></p>
             </div>
-            <div id="player-3-info" class="info-box text-right w-full">
-                <h2 id="player-3-name" class="text-lg font-bold">Player 3</h2>
-                <p>Score: <span id="player-3-score">0</span></p>
-                <p>Bid: <span id="player-3-bid">-</span> | Tricks: <span id="player-3-tricks">0</span></p>
+            <div id="player-3-info" class="info-box text-center">
+                <h2 id="player-3-name" class="text-xl font-bold">Player 3</h2>
+                <p class="text-xl">Score: <span id="player-3-score" class="font-bold">0</span></p>
+                <p class="text-xl">Bid: <span id="player-3-bid" class="font-bold">-</span> | Tricks: <span id="player-3-tricks" class="font-bold">0</span></p>
             </div>
         </header>
 
@@ -176,6 +246,7 @@
             
             <div class="flex flex-col items-center">
                  <div id="message-box" class="text-center text-xl font-semibold my-4 h-8 text-yellow-300 bg-black bg-opacity-30 px-4 py-1 rounded-md"></div>
+                 <div id="error-box" class="hidden text-center text-lg font-semibold my-2 text-red-400"></div>
                  <div id="player-1-played-card" class="player-area played-card-container"></div>
             </div>
         </main>
@@ -187,9 +258,9 @@
              <div id="main-hand-area" class="flex justify-center items-end space-x-[-50px] player-area">
             </div>
             <div id="player-1-info" class="info-box mt-4 text-center">
-                <h2 id="player-1-name" class="text-lg font-bold">Player 1</h2>
-                <p>Score: <span id="player-1-score">0</span></p>
-                <p>Bid: <span id="player-1-bid">-</span> | Tricks: <span id="player-1-tricks">0</span></p>
+                <h2 id="player-1-name" class="text-xl font-bold">Player 1</h2>
+                <p class="text-xl">Score: <span id="player-1-score" class="font-bold">0</span></p>
+                <p class="text-xl">Bid: <span id="player-1-bid" class="font-bold">-</span> | Tricks: <span id="player-1-tricks" class="font-bold">0</span></p>
             </div>
         </footer>
     </div>
@@ -198,6 +269,7 @@
         <div class="modal-content">
             <h3 id="bidding-prompt" class="text-2xl mb-6 font-semibold"></h3>
             <input type="number" id="bid-input" min="0" class="bg-slate-700 text-white p-3 rounded-lg w-full mb-4 text-center text-xl">
+            <div id="bid-error-box" class="hidden text-red-400 text-sm mb-4 h-5"></div>
             <button id="submit-bid-button" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-lg text-lg w-full shadow-lg">Submit Bid</button>
         </div>
     </div>
@@ -223,11 +295,14 @@
         let gameState = {};
         let bidHandler;
         let actionButtonClickHandler;
+        let errorTimeout;
+        let bidErrorTimeout;
 
         // --- DOM Elements ---
         const mainMenu = document.getElementById('main-menu');
         const gameBoard = document.getElementById('game-board');
         const messageBox = document.getElementById('message-box');
+        const errorBox = document.getElementById('error-box');
         const biddingModal = document.getElementById('bidding-modal');
         const biddingPrompt = document.getElementById('bidding-prompt');
         const bidInput = document.getElementById('bid-input');
@@ -292,6 +367,7 @@
                 dealerIndex: Math.floor(Math.random() * numPlayers), currentPlayerIndex: 0,
                 currentTrick: [], trumpSuit: '', roundCardCount: 0, roundSequence: [], totalRounds: 0,
                 humanPlayerHasViewedHand: false,
+                isBiddingPhase: true,
             };
             for (let i = 0; i < numPlayers; i++) {
                 gameState.players.push({
@@ -321,6 +397,7 @@
             shuffleDeck(gameState.deck);
             dealCards();
             await animateDealing();
+            gameState.isBiddingPhase = true;
             gameState.currentPlayerIndex = (gameState.dealerIndex + 1) % gameState.numPlayers;
             await conductBidding();
         }
@@ -370,6 +447,7 @@
                 updateUI();
                 gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.numPlayers;
             }
+            gameState.isBiddingPhase = false;
             gameState.currentPlayerIndex = (gameState.dealerIndex + 1) % gameState.numPlayers;
             startTrick();
         }
@@ -387,9 +465,11 @@
                         const forbiddenBid = gameState.roundCardCount - totalBids;
                         if (bidHandler) submitBidButton.removeEventListener('click', bidHandler);
                         bidHandler = () => {
+                            const bidErrorBox = document.getElementById('bid-error-box');
+                            bidErrorBox.classList.add('hidden');
                             const bid = parseInt(bidInput.value);
-                            if (isNaN(bid) || bid < 0 || bid > gameState.roundCardCount) { alert('Invalid bid.'); return; }
-                            if (isDealer && isLast && bid === forbiddenBid) { alert(`As dealer, you can't bid ${forbiddenBid}.`); return; }
+                            if (isNaN(bid) || bid < 0 || bid > gameState.roundCardCount) { showBidError(`Invalid bid. Must be between 0 and ${gameState.roundCardCount}.`); return; }
+                            if (isDealer && isLast && bid === forbiddenBid) { showBidError(`As dealer, you can't bid ${forbiddenBid}.`); return; }
                             biddingModal.style.display = 'none';
                             gameState.humanPlayerHasViewedHand = false;
                             updateUI();
@@ -479,18 +559,19 @@
                     nextPlayerAction();
                 });
             } else {
-                await delay(200);
+                await delay(300);
                 await nextPlayerAction();
             }
         }
 
         async function handleCardClick(cardElem) {
+            if (gameState.isBiddingPhase) return;
             const suit = cardElem.dataset.suit, value = cardElem.dataset.value;
             const player = gameState.players[gameState.currentPlayerIndex];
             if (!player || player.isAI) return;
             const leadSuit = gameState.currentTrick.length > 0 ? gameState.currentTrick[0].card.suit : null;
             if (leadSuit && player.hand.some(c => c.suit === leadSuit) && suit !== leadSuit) {
-                alert(`You must follow suit! Play a ${leadSuit} card.`); return;
+                showError(`You must follow suit! Play a ${leadSuit} card.`); return;
             }
             disableCardSelection();
             await animateCardPlay({suit, value}, cardElem, `player-${player.id + 1}-played-card`);
@@ -518,10 +599,10 @@
             await animateTrickWin(winner);
             
             if (winner.hand.length === 0) {
-                await delay(800);
+                await delay(1000);
                 endRound();
             } else {
-                await delay(800);
+                await delay(1000);
                 await startTrick();
             }
         }
@@ -600,6 +681,25 @@
         }
 
         function showMessage(msg) { messageBox.textContent = msg; }
+        
+        function showError(msg) {
+            if (errorTimeout) clearTimeout(errorTimeout);
+            errorBox.textContent = msg;
+            errorBox.classList.remove('hidden');
+            errorTimeout = setTimeout(() => {
+                errorBox.classList.add('hidden');
+            }, 3000);
+        }
+
+        function showBidError(msg) {
+            const bidErrorBox = document.getElementById('bid-error-box');
+            if (bidErrorTimeout) clearTimeout(bidErrorTimeout);
+            bidErrorBox.textContent = msg;
+            bidErrorBox.classList.remove('hidden');
+            bidErrorTimeout = setTimeout(() => {
+                bidErrorBox.classList.add('hidden');
+            }, 3000);
+        }
 
         function showActionButton(text, callback) {
             actionButton.textContent = text;
@@ -659,7 +759,7 @@
                         cardElem.style.left = `${deckRect.left}px`;
                         cardElem.style.top = `${deckRect.top}px`;
                         cardElem.style.zIndex = 100 + i * gameState.numPlayers + j;
-                        cardElem.style.transition = 'all 0.7s ease-out';
+                        cardElem.style.transition = 'all 0.8s cubic-bezier(0.25, 1, 0.5, 1)';
                         document.body.appendChild(cardElem);
 
                         const targetRect = playerTargets[j].getBoundingClientRect();
@@ -676,7 +776,7 @@
                         cardElem.addEventListener('transitionend', () => { cardElem.remove(); resolve(); }, { once: true });
                     });
                     animationPromises.push(promise);
-                    await new Promise(res => setTimeout(res, 100));
+                    await new Promise(res => setTimeout(res, 120));
                 }
             }
             await Promise.all(animationPromises);
@@ -704,7 +804,7 @@
                 clone.style.left = `${startRect.left}px`;
                 clone.style.top = `${startRect.top}px`;
                 clone.style.zIndex = '1000';
-                clone.style.transition = 'all 0.7s ease-in-out';
+                clone.style.transition = 'all 0.8s cubic-bezier(0.25, 1, 0.5, 1)';
                 document.body.appendChild(clone);
 
                 if (sourceElem.classList.contains('card')) {
@@ -738,7 +838,7 @@
                     clone.style.left = `${startRect.left}px`;
                     clone.style.top = `${startRect.top}px`;
                     clone.style.zIndex = '1000';
-                    clone.style.transition = 'all 1s ease-in';
+                    clone.style.transition = 'all 1.2s cubic-bezier(0.6, -0.28, 0.735, 0.045)'; // ease-in-back
                     document.body.appendChild(clone);
                     cardElement.style.opacity = '0';
                     requestAnimationFrame(() => {
