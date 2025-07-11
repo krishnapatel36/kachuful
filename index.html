@@ -15,7 +15,6 @@
             overflow: hidden;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            transform: scale(0.85);
         }
         .card {
             width: 100px;
@@ -158,9 +157,7 @@
             background-position: right center;
         }
 
-
-        /* Responsive adjustments */
-        @media (max-width: 1024px) {
+         @media (max-width: 1024px) {
             .info-box {
                 width: 220px;
                 padding: 0.75rem 1rem;
@@ -179,10 +176,35 @@
             #game-header { gap: 0.5rem; justify-content: space-around;}
         }
 
+        /* === START OF UPDATED SECTION === */
         @media (max-width: 600px) {
-            body { transform: scale(1); } /* Remove scaling on mobile */
-            .card, .played-card { width: 65px; height: 97px; }
-            #main-hand-area { space-x: -40px !important; }
+            body { 
+                transform: scale(1); /* Remove scaling on mobile */
+                overflow: auto;      /* Allow scrolling if content overflows */
+            }
+            footer {
+                margin-bottom: 0.5rem; /* Reduce bottom margin on small screens */
+            }
+            .card, .played-card { 
+                width: 70px; 
+                height: 105px;
+                flex-shrink: 0; /* Prevent cards from shrinking */
+            }
+            #main-hand-area {
+                width: 100%; /* Occupy full screen width */
+                overflow-x: auto;  /* IMPORTANT: Enables horizontal scrolling */
+                overflow-y: hidden;
+                justify-content: flex-start; /* Align cards to the left for scrolling */
+                padding: 0 1rem 1rem 1rem; /* Add padding for a better look */
+                space-x: -35px !important;
+                scrollbar-width: none; /* Hide scrollbar for Firefox */
+            }
+            #main-hand-area::-webkit-scrollbar {
+                display: none; /* Hide scrollbar for Chrome, Safari, and Opera */
+            }
+            .player-area {
+                min-height: 130px; /* Reduce min-height to save vertical space */
+            }
             #game-header {
                 flex-direction: column;
                 align-items: center;
@@ -197,7 +219,7 @@
             }
             #game-header .center-info {
                 width: 90%;
-                order: -1; /* Keep round info on top */
+                order: -1;
             }
             #action-button {
                 padding: 0.75rem 1.5rem;
@@ -207,8 +229,16 @@
         }
 
         @media (max-width: 420px) {
-            .card, .played-card { width: 55px; height: 82px; }
-            #main-hand-area { space-x: -35px !important; }
+            .card, .played-card {
+                width: 65px;
+                height: 97px;
+            }
+            #main-hand-area {
+                space-x: -40px !important; /* Overlap cards more on very small screens */
+            }
+            .player-area {
+                 min-height: 120px;
+            }
              #game-header .info-box { width: 80%; }
         }
     </style>
@@ -266,7 +296,7 @@
             </div>
         </main>
         
-        <footer class="flex flex-col items-center pb-4 z-10">
+        <footer class="flex flex-col items-center pb-4 z-10 mb-20">
              <div id="action-prompt" class="absolute bottom-1/2 left-1/2 -translate-x-1/2 z-20">
                 <button id="action-button" class="hidden bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold py-4 px-8 rounded-lg text-xl shadow-lg transition-transform transform hover:scale-105 animate-pulse"></button>
             </div>
