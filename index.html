@@ -19,39 +19,29 @@
             width: 100px;
             height: 150px;
             border-radius: 10px;
-            background-color: #f8fafc; /* slate-50 */
-            border: 1px solid #94a3b8; /* slate-400 */
-            padding: 8px;
-            font-family: 'Merriweather', serif;
+            background-size: cover;
+            background-position: center;
             cursor: pointer;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
             position: relative;
             box-shadow: 0 5px 10px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         .card:hover {
             transform: translateY(-12px) scale(1.08);
             box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
         }
-        .card.red .corner, .card.red .center-suit { color: #ef4444; } /* red-500 */
-        .card.black .corner, .card.black .center-suit { color: #1e293b; } /* slate-800 */
-        
-        .corner {
-            position: absolute;
-            width: 30px;
-            text-align: center;
+        .card.playable-card {
+            transform: translateY(-25px);
+            box-shadow: 0 15px 25px rgba(251, 191, 36, 0.4); /* yellow-400 */
+            border: 2px solid #facc15; /* yellow-400 */
         }
-        .corner .value { font-size: 18px; line-height: 1; font-weight: 700; }
-        .corner .suit { font-size: 14px; }
-        .corner.top-left { top: 8px; left: 8px; }
-        .corner.bottom-right { bottom: 8px; right: 8px; transform: rotate(180deg); }
-
-        .center-suit {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 50px;
-            opacity: 0.8;
+         .card.playable-card:hover {
+            transform: translateY(-30px) scale(1.05);
+        }
+        .card.non-playable-card {
+            filter: grayscale(80%) opacity(0.6);
+            cursor: not-allowed;
         }
 
         .player-area {
@@ -60,12 +50,13 @@
             justify-content: center;
             align-items: center;
         }
+        
         .played-card-container {
             perspective: 1000px;
         }
         .played-card {
-            width: 90px;
-            height: 135px;
+            width: 100px;
+            height: 150px;
             cursor: default;
             animation: flipIn 0.6s cubic-bezier(0.25, 1, 0.5, 1);
         }
@@ -110,7 +101,11 @@
             border-radius: 10px;
             border: 1px solid #334155; /* slate-700 */
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            transition: background-color 0.3s;
+            transition: all 0.3s ease;
+        }
+        .info-box.active-player {
+            border-color: #facc15;
+            box-shadow: 0 0 15px rgba(250, 204, 21, 0.5);
         }
         .game-table {
             position: absolute;
@@ -125,6 +120,16 @@
             box-shadow: inset 0 0 25px rgba(0,0,0,0.5);
             z-index: -1;
         }
+        #deck-pile {
+            width: 100px;
+            height: 150px;
+            border: 2px dashed #334155;
+            border-radius: 10px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-200">
@@ -133,19 +138,20 @@
         <h1 class="text-7xl font-bold mb-4 text-slate-50" style="text-shadow: 3px 3px 10px rgba(0,0,0,0.6);">Kachuful</h1>
         <p class="text-slate-400 mb-12 text-lg">A Traditional Gujarati Trick-Taking Game</p>
         <div class="space-y-5">
-            <button onclick="startGame(1)" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-8 rounded-lg text-xl w-80 shadow-lg transition-transform transform hover:scale-105">1 Player vs AI</button>
-            <button onclick="startGame(2)" class="bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-8 rounded-lg text-xl w-80 shadow-lg transition-transform transform hover:scale-105">2 Players vs AI</button>
-            <button onclick="startGame(3)" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-4 px-8 rounded-lg text-xl w-80 shadow-lg transition-transform transform hover:scale-105">3 Players</button>
+            <button onclick="handleStartGame(1, this)" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-8 rounded-lg text-xl w-80 shadow-lg transition-transform transform hover:scale-105">1 Player vs AI</button>
+            <button onclick="handleStartGame(2, this)" class="bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-8 rounded-lg text-xl w-80 shadow-lg transition-transform transform hover:scale-105">2 Players vs AI</button>
+            <button onclick="handleStartGame(3, this)" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-4 px-8 rounded-lg text-xl w-80 shadow-lg transition-transform transform hover:scale-105">3 Players</button>
         </div>
     </div>
 
     <div id="game-board" class="hidden h-screen flex flex-col p-4 relative">
         <div class="game-table"></div>
-        <button onclick="location.reload()" class="absolute top-4 left-4 bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-lg shadow-md z-10">
+        <div id="deck-pile" class="hidden"></div>
+        <button onclick="location.reload()" class="absolute top-4 left-4 bg-red-600 hover:bg-red-500 text-white font-bold p-2 rounded-full shadow-md z-20">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
         </button>
-        <header class="grid grid-cols-3 gap-4 text-center items-center p-2 z-0">
-            <div class="info-box text-left">
+        <header class="grid grid-cols-3 gap-4 text-center items-start p-2 z-10">
+            <div id="player-2-info" class="info-box text-left w-full">
                 <h2 id="player-2-name" class="text-lg font-bold">Player 2</h2>
                 <p>Score: <span id="player-2-score">0</span></p>
                 <p>Bid: <span id="player-2-bid">-</span> | Tricks: <span id="player-2-tricks">0</span></p>
@@ -155,14 +161,14 @@
                 <p>Trump: <span id="trump-suit" class="text-2xl font-bold"></span></p>
                 <p class="text-sm text-slate-400">Dealer: <span id="dealer-name"></span></p>
             </div>
-            <div class="info-box text-right">
+            <div id="player-3-info" class="info-box text-right w-full">
                 <h2 id="player-3-name" class="text-lg font-bold">Player 3</h2>
                 <p>Score: <span id="player-3-score">0</span></p>
                 <p>Bid: <span id="player-3-bid">-</span> | Tricks: <span id="player-3-tricks">0</span></p>
             </div>
         </header>
 
-        <main class="flex-grow flex flex-col justify-between items-center py-4">
+        <main class="flex-grow flex flex-col justify-between items-center py-4 z-10">
             <div class="w-full flex justify-around items-center h-40">
                 <div id="player-2-played-card" class="player-area played-card-container"></div>
                 <div id="player-3-played-card" class="player-area played-card-container"></div>
@@ -174,10 +180,13 @@
             </div>
         </main>
         
-        <footer class="flex flex-col items-center pb-4">
-             <div id="player-1-hand" class="flex justify-center items-end space-x-[-40px] player-area">
+        <footer class="flex flex-col items-center pb-4 z-10">
+             <div id="action-prompt" class="absolute bottom-1/2 left-1/2 -translate-x-1/2 z-20">
+                <button id="action-button" class="hidden bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold py-4 px-8 rounded-lg text-xl shadow-lg transition-transform transform hover:scale-105 animate-pulse"></button>
             </div>
-            <div class="info-box mt-4 text-center">
+             <div id="main-hand-area" class="flex justify-center items-end space-x-[-50px] player-area">
+            </div>
+            <div id="player-1-info" class="info-box mt-4 text-center">
                 <h2 id="player-1-name" class="text-lg font-bold">Player 1</h2>
                 <p>Score: <span id="player-1-score">0</span></p>
                 <p>Bid: <span id="player-1-bid">-</span> | Tricks: <span id="player-1-tricks">0</span></p>
@@ -204,19 +213,16 @@
 
     <script>
         // --- Game Constants and State ---
-        const SUITS = ['♠', '♦', '♣', '♥'];
-        const VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+        const SUITS = { '♠': 'S', '♦': 'D', '♣': 'C', '♥': 'H' };
+        const VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
+        const DISPLAY_VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
         const TRUMP_CYCLE = ['♠', '♦', '♣', '♥'];
-        const PLAYERS_CONFIG = {
-            3: { cards: 10, rounds: 19 },
-            4: { cards: 10, rounds: 19 },
-            5: { cards: 10, rounds: 19 },
-            6: { cards: 8,  rounds: 15 },
-            7: { cards: 7,  rounds: 13 },
-        };
+        const PLAYERS_CONFIG = { 3: { cards: 10, rounds: 19 } };
+        const CARD_BACK_URL = 'https://deckofcardsapi.com/static/img/back.png';
 
         let gameState = {};
-        let bidHandler; // To store the event listener function
+        let bidHandler;
+        let actionButtonClickHandler;
 
         // --- DOM Elements ---
         const mainMenu = document.getElementById('main-menu');
@@ -227,85 +233,94 @@
         const bidInput = document.getElementById('bid-input');
         const submitBidButton = document.getElementById('submit-bid-button');
         const gameOverModal = document.getElementById('game-over-modal');
+        const actionButton = document.getElementById('action-button');
+        const mainHandArea = document.getElementById('main-hand-area');
 
-        // --- Game Setup ---
-        function createDeck() {
-            return SUITS.flatMap(suit => VALUES.map(value => ({ suit, value })));
+        // --- Game Setup & Asset Loading ---
+        const delay = ms => new Promise(res => setTimeout(res, ms));
+        function createDeck() { return Object.keys(SUITS).flatMap(suit => DISPLAY_VALUES.map(value => ({ suit, value }))); }
+        function getCardValue(card) { return DISPLAY_VALUES.indexOf(card.value); }
+        
+        function preloadImages() {
+            const promises = [];
+            const deck = createDeck();
+            deck.forEach(card => {
+                const promise = new Promise((resolve, reject) => {
+                    const img = new Image();
+                    const valueCode = card.value === '10' ? '0' : card.value.charAt(0);
+                    const suitCode = SUITS[card.suit];
+                    img.src = `https://deckofcardsapi.com/static/img/${valueCode}${suitCode}.png`;
+                    img.onload = resolve;
+                    img.onerror = () => reject(new Error(`Failed to load ${img.src}`));
+                });
+                promises.push(promise);
+            });
+
+            const backPromise = new Promise((resolve, reject) => {
+                const img = new Image();
+                img.src = CARD_BACK_URL;
+                img.onload = resolve;
+                img.onerror = () => reject(new Error(`Failed to load ${img.src}`));
+            });
+            promises.push(backPromise);
+
+            return Promise.all(promises);
         }
 
-        function getCardValue(card) {
-            return VALUES.indexOf(card.value);
+        async function handleStartGame(numPlayers, button) {
+            const originalText = button.textContent;
+            button.textContent = 'Loading...';
+            button.disabled = true;
+
+            try {
+                await preloadImages();
+                startGame(numPlayers);
+            } catch (error) {
+                console.error("Failed to preload card images.", error);
+                alert("Could not load all card images. Please check your internet connection and try again.");
+                button.textContent = originalText;
+                button.disabled = false;
+            }
         }
 
         function startGame(numHumanPlayers) {
             mainMenu.style.display = 'none';
             gameBoard.style.display = 'flex';
-            
             const numPlayers = 3;
-            
             gameState = {
-                numPlayers: numPlayers,
-                numHumanPlayers: numHumanPlayers,
-                players: [],
-                deck: [],
-                roundNumber: 0,
-                dealerIndex: Math.floor(Math.random() * numPlayers),
-                currentPlayerIndex: 0,
-                currentTrick: [],
-                trumpSuit: '',
-                roundCardCount: 0,
-                roundSequence: [],
-                totalRounds: 0,
+                numPlayers, numHumanPlayers, players: [], deck: [], roundNumber: 0,
+                dealerIndex: Math.floor(Math.random() * numPlayers), currentPlayerIndex: 0,
+                currentTrick: [], trumpSuit: '', roundCardCount: 0, roundSequence: [], totalRounds: 0,
+                humanPlayerHasViewedHand: false,
             };
-
             for (let i = 0; i < numPlayers; i++) {
                 gameState.players.push({
-                    id: i,
-                    name: `Player ${i + 1}`,
-                    isAI: i >= numHumanPlayers,
-                    hand: [],
-                    bid: null,
-                    tricksWon: 0,
-                    score: 0,
+                    id: i, name: `Player ${i + 1}`, isAI: i >= numHumanPlayers,
+                    hand: [], bid: null, tricksWon: 0, score: 0,
                 });
             }
-
             const config = PLAYERS_CONFIG[numPlayers];
-            gameState.roundCardCount = config.cards;
             gameState.totalRounds = config.rounds;
-            
             let sequence = [];
             for (let i = config.cards; i >= 1; i--) sequence.push(i);
             for (let i = 2; i < config.cards; i++) sequence.push(i);
             gameState.roundSequence = sequence.slice(0, config.rounds);
-
             startNewRound();
         }
 
         // --- Round Management ---
         async function startNewRound() {
             gameState.roundNumber++;
-            if (gameState.roundNumber > gameState.totalRounds) {
-                endGame();
-                return;
-            }
-
+            if (gameState.roundNumber > gameState.totalRounds) { endGame(); return; }
             gameState.currentTrick = [];
-            gameState.players.forEach(p => {
-                p.tricksWon = 0;
-                p.bid = null;
-            });
-            
+            gameState.players.forEach(p => { p.tricksWon = 0; p.bid = null; });
             gameState.dealerIndex = (gameState.dealerIndex + 1) % gameState.numPlayers;
             gameState.trumpSuit = TRUMP_CYCLE[(gameState.roundNumber - 1) % TRUMP_CYCLE.length];
             gameState.roundCardCount = gameState.roundSequence[gameState.roundNumber - 1];
-
             gameState.deck = createDeck();
             shuffleDeck(gameState.deck);
             dealCards();
-            
-            updateUI();
-            
+            await animateDealing();
             gameState.currentPlayerIndex = (gameState.dealerIndex + 1) % gameState.numPlayers;
             await conductBidding();
         }
@@ -329,8 +344,8 @@
 
         function sortHand(hand) {
             hand.sort((a, b) => {
-                const suitA = SUITS.indexOf(a.suit);
-                const suitB = SUITS.indexOf(b.suit);
+                const suitA = Object.keys(SUITS).indexOf(a.suit);
+                const suitB = Object.keys(SUITS).indexOf(b.suit);
                 if (suitA !== suitB) return suitA - suitB;
                 return getCardValue(b) - getCardValue(a);
             });
@@ -341,16 +356,15 @@
             let totalBids = 0;
             for (let i = 0; i < gameState.numPlayers; i++) {
                 const player = gameState.players[gameState.currentPlayerIndex];
+                updateActivePlayerUI();
                 let bid;
-
                 if (player.isAI) {
                     bid = getAIBid(player);
                     showMessage(`${player.name} bids ${bid}.`);
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    await delay(1200);
                 } else {
                     bid = await getHumanBid(player, totalBids);
                 }
-                
                 player.bid = bid;
                 totalBids += bid;
                 updateUI();
@@ -362,306 +376,382 @@
         
         function getHumanBid(player, totalBids) {
             return new Promise(resolve => {
-                bidInput.value = '';
-                bidInput.max = gameState.roundCardCount;
-                biddingPrompt.textContent = `${player.name}, place your bid (0-${gameState.roundCardCount}).`;
-                
-                const isDealer = player.id === gameState.dealerIndex;
-                const isLastBidder = gameState.players.filter(p => p.bid === null).length === 1;
-                const forbiddenBid = gameState.roundCardCount - totalBids;
-
-                biddingModal.style.display = 'flex';
-                
-                if (bidHandler) {
-                    submitBidButton.removeEventListener('click', bidHandler);
-                }
-
-                bidHandler = () => {
-                    const bid = parseInt(bidInput.value);
-                    if (isNaN(bid) || bid < 0 || bid > gameState.roundCardCount) {
-                        alert('Invalid bid. Please enter a number between 0 and ' + gameState.roundCardCount);
-                        return;
-                    }
-                    if (isDealer && isLastBidder && bid === forbiddenBid) {
-                         alert(`As the dealer, you cannot bid ${forbiddenBid} as it would make the total bids equal to ${gameState.roundCardCount}.`);
-                         return;
-                    }
-                    
-                    biddingModal.style.display = 'none';
-                    resolve(bid);
+                const showAndBid = () => {
+                    gameState.humanPlayerHasViewedHand = true;
+                    updateUI();
+                    showActionButton(`Place Your Bid`, () => {
+                        actionButton.style.display = 'none';
+                        biddingModal.style.display = 'flex';
+                        biddingPrompt.textContent = `${player.name}, place your bid (0-${gameState.roundCardCount}).`;
+                        const isDealer = player.id === gameState.dealerIndex, isLast = gameState.players.filter(p=>p.bid===null).length===1;
+                        const forbiddenBid = gameState.roundCardCount - totalBids;
+                        if (bidHandler) submitBidButton.removeEventListener('click', bidHandler);
+                        bidHandler = () => {
+                            const bid = parseInt(bidInput.value);
+                            if (isNaN(bid) || bid < 0 || bid > gameState.roundCardCount) { alert('Invalid bid.'); return; }
+                            if (isDealer && isLast && bid === forbiddenBid) { alert(`As dealer, you can't bid ${forbiddenBid}.`); return; }
+                            biddingModal.style.display = 'none';
+                            gameState.humanPlayerHasViewedHand = false;
+                            updateUI();
+                            resolve(bid);
+                        };
+                        submitBidButton.addEventListener('click', bidHandler);
+                    });
                 };
-                
-                submitBidButton.addEventListener('click', bidHandler);
+
+                if (gameState.numHumanPlayers > 1) {
+                    showActionButton(`It's ${player.name}'s Turn to Bid`, () => {
+                        showActionButton('Show My Cards', showAndBid);
+                    });
+                } else {
+                    showAndBid();
+                }
             });
         }
 
         function getAIBid(player) {
-            let potentialTricks = 0;
-            const hand = player.hand;
-            
-            potentialTricks += hand.filter(c => c.value === 'A').length;
-            potentialTricks += hand.filter(c => c.value === 'K' && hand.length > 5).length;
-
-            const trumpCards = hand.filter(c => c.suit === gameState.trumpSuit);
-            if (trumpCards.length >= 3) {
-                potentialTricks += trumpCards.length - 1;
-            } else if (trumpCards.length > 0) {
-                potentialTricks += 1;
+            let pTricks = player.hand.filter(c => c.value === 'A' || (c.value === 'K' && player.hand.length > 5)).length;
+            const trumpCards = player.hand.filter(c => c.suit === gameState.trumpSuit);
+            if (trumpCards.length >= 3) pTricks += trumpCards.length - 1;
+            else if (trumpCards.length > 0) pTricks += 1;
+            let bid = Math.min(Math.floor(pTricks), gameState.roundCardCount);
+            const isDealer = player.id === gameState.dealerIndex, isLast = gameState.players.filter(p => p.bid === null).length === 1;
+            if (isDealer && isLast) {
+                const totalBids = gameState.players.reduce((a, p) => a + (p.bid || 0), 0);
+                if (bid === gameState.roundCardCount - totalBids) bid = (bid > 0) ? bid - 1 : 1;
             }
-
-            if (gameState.roundCardCount < 4) {
-                 potentialTricks = Math.round(potentialTricks / 2);
-            }
-
-            let bid = Math.min(Math.floor(potentialTricks), gameState.roundCardCount);
-            
-            const isDealer = player.id === gameState.dealerIndex;
-            const isLastBidder = gameState.players.filter(p => p.bid === null).length === 1;
-            if (isDealer && isLastBidder) {
-                const totalBidsSoFar = gameState.players.reduce((acc, p) => acc + (p.bid || 0), 0);
-                const forbiddenBid = gameState.roundCardCount - totalBidsSoFar;
-                if (bid === forbiddenBid) {
-                    bid = (bid > 0) ? bid - 1 : 1;
-                    bid = Math.min(bid, gameState.roundCardCount);
-                }
-            }
-
             return Math.max(0, bid);
         }
 
         // --- Gameplay (Tricks) ---
-        function startTrick() {
+        async function startTrick() {
             gameState.currentTrick = [];
             updateUI();
-            playTurn();
+            await playTurn();
         }
 
         async function playTurn() {
             const player = gameState.players[gameState.currentPlayerIndex];
-            
+            updateActivePlayerUI();
             if (player.isAI) {
                 showMessage(`${player.name}'s turn...`);
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                await delay(1500);
                 const cardToPlay = getAICard(player);
-                playCard(player, cardToPlay);
+                const sourceElem = document.getElementById(`player-${player.id + 1}-info`);
+                await animateCardPlay(cardToPlay, sourceElem, `player-${player.id + 1}-played-card`);
+                await playCard(player, cardToPlay);
             } else {
-                showMessage(`${player.name}, play a card.`);
-                enableCardSelection();
-            }
-        }
-
-        function playCard(player, card) {
-            player.hand = player.hand.filter(c => c.suit !== card.suit || c.value !== card.value);
-            gameState.currentTrick.push({ player, card });
-            updateUI();
-            
-            if (gameState.currentTrick.length === gameState.numPlayers) {
-                setTimeout(endTrick, 1500);
-            } else {
-                gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.numPlayers;
-                setTimeout(playTurn, 500);
-            }
-        }
-
-        function handleCardClick(suit, value) {
-            const player = gameState.players[gameState.currentPlayerIndex];
-            if (player.isAI) return;
-
-            const card = { suit, value };
-            
-            const leadSuit = gameState.currentTrick.length > 0 ? gameState.currentTrick[0].card.suit : null;
-            const hasLeadSuit = player.hand.some(c => c.suit === leadSuit);
-
-            if (leadSuit && hasLeadSuit && card.suit !== leadSuit) {
-                alert(`You must follow suit! Play a ${leadSuit} card.`);
-                return;
-            }
-            
-            disableCardSelection();
-            playCard(player, card);
-        }
-
-        function endTrick() {
-            const leadSuit = gameState.currentTrick[0].card.suit;
-            let winningPlay = gameState.currentTrick[0];
-
-            for (let i = 1; i < gameState.currentTrick.length; i++) {
-                const currentPlay = gameState.currentTrick[i];
-                const winningCard = winningPlay.card;
-                const currentCard = currentPlay.card;
-
-                if (currentCard.suit === gameState.trumpSuit && winningCard.suit !== gameState.trumpSuit) {
-                    winningPlay = currentPlay;
-                } else if (currentCard.suit === gameState.trumpSuit && winningCard.suit === gameState.trumpSuit) {
-                    if (getCardValue(currentCard) > getCardValue(winningCard)) winningPlay = currentPlay;
-                } else if (currentCard.suit === leadSuit && winningCard.suit !== gameState.trumpSuit) {
-                    if (getCardValue(currentCard) > getCardValue(winningCard)) winningPlay = currentPlay;
+                const turnLogic = () => {
+                    gameState.humanPlayerHasViewedHand = true;
+                    updateUI();
+                    showMessage(`${player.name}, play a card.`);
+                    enableCardSelection();
+                };
+                if (gameState.numHumanPlayers > 1) {
+                    showActionButton(`It's ${player.name}'s Turn`, () => {
+                         showActionButton('Show My Cards', turnLogic);
+                    });
+                } else {
+                    turnLogic();
                 }
             }
+        }
 
+        async function playCard(player, card) {
+            player.hand = player.hand.filter(c => !(c.suit === card.suit && c.value === card.value));
+            gameState.currentTrick.push({ player, card });
+            disableCardSelection();
+            gameState.humanPlayerHasViewedHand = false;
+            updateUI();
+            
+            const nextPlayerAction = async () => {
+                if (gameState.currentTrick.length === gameState.numPlayers) {
+                    await endTrick();
+                } else {
+                    gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.numPlayers;
+                    await playTurn();
+                }
+            };
+
+            if (gameState.numHumanPlayers > 1 && !player.isAI) {
+                showActionButton('Hide Cards & Pass Turn', () => {
+                    actionButton.style.display = 'none';
+                    nextPlayerAction();
+                });
+            } else {
+                await delay(200);
+                await nextPlayerAction();
+            }
+        }
+
+        async function handleCardClick(cardElem) {
+            const suit = cardElem.dataset.suit, value = cardElem.dataset.value;
+            const player = gameState.players[gameState.currentPlayerIndex];
+            if (!player || player.isAI) return;
+            const leadSuit = gameState.currentTrick.length > 0 ? gameState.currentTrick[0].card.suit : null;
+            if (leadSuit && player.hand.some(c => c.suit === leadSuit) && suit !== leadSuit) {
+                alert(`You must follow suit! Play a ${leadSuit} card.`); return;
+            }
+            disableCardSelection();
+            await animateCardPlay({suit, value}, cardElem, `player-${player.id + 1}-played-card`);
+            await playCard(player, { suit, value });
+        }
+
+        async function endTrick() {
+            const leadSuit = gameState.currentTrick[0].card.suit;
+            let winningPlay = gameState.currentTrick[0];
+            for (let i = 1; i < gameState.currentTrick.length; i++) {
+                const current = gameState.currentTrick[i], winnerCard = winningPlay.card, currentCard = current.card;
+                if ((currentCard.suit === gameState.trumpSuit && winnerCard.suit !== gameState.trumpSuit) ||
+                    (currentCard.suit === gameState.trumpSuit && winnerCard.suit === gameState.trumpSuit && getCardValue(currentCard) > getCardValue(winnerCard)) ||
+                    (currentCard.suit === leadSuit && winnerCard.suit !== gameState.trumpSuit && getCardValue(currentCard) > getCardValue(winnerCard))) {
+                    winningPlay = current;
+                }
+            }
             const winner = winningPlay.player;
             winner.tricksWon++;
+            gameState.currentPlayerIndex = winner.id;
             showMessage(`${winner.name} wins the trick!`);
-
-            gameState.currentPlayerIndex = gameState.players.findIndex(p => p.id === winner.id);
             
-            if (gameState.players[0].hand.length === 0) {
-                setTimeout(endRound, 2000);
+            updateUI();
+
+            await animateTrickWin(winner);
+            
+            if (winner.hand.length === 0) {
+                await delay(800);
+                endRound();
             } else {
-                setTimeout(startTrick, 2000);
+                await delay(800);
+                await startTrick();
             }
         }
 
         function getAICard(player) {
-            const hand = player.hand;
-            const leadPlay = gameState.currentTrick.length > 0 ? gameState.currentTrick[0] : null;
-            const leadSuit = leadPlay ? leadPlay.card.suit : null;
-            
-            const playableCards = hand.filter(card => {
-                if (!leadSuit) return true;
-                const hasLeadSuit = hand.some(c => c.suit === leadSuit);
-                return hasLeadSuit ? card.suit === leadSuit : true;
-            });
-
-            if (leadSuit) {
-                const highestTrickCard = gameState.currentTrick.reduce((highest, play) => {
-                    if (!highest) return play.card;
-                    if (play.card.suit === gameState.trumpSuit && highest.suit !== gameState.trumpSuit) return play.card;
-                    if (play.card.suit !== gameState.trumpSuit && highest.suit === gameState.trumpSuit) return highest;
-                    if (getCardValue(play.card) > getCardValue(highest)) return play.card;
-                    return highest;
-                }, null);
-
-                const winningCards = playableCards.filter(c => {
-                    if (c.suit === gameState.trumpSuit && highestTrickCard.suit !== gameState.trumpSuit) return true;
-                    if (c.suit === gameState.trumpSuit && highestTrickCard.suit === gameState.trumpSuit && getCardValue(c) > getCardValue(highestTrickCard)) return true;
-                    if (c.suit === leadSuit && highestTrickCard.suit !== gameState.trumpSuit && getCardValue(c) > getCardValue(highestTrickCard)) return true;
-                    return false;
-                });
-
-                if (winningCards.length > 0) {
-                    if (player.tricksWon < player.bid) {
-                        return winningCards.sort((a,b) => getCardValue(b) - getCardValue(a))[0];
-                    } else {
-                         const nonWinningCards = playableCards.filter(c => !winningCards.includes(c));
-                         if(nonWinningCards.length > 0) return nonWinningCards.sort((a,b) => getCardValue(a) - getCardValue(b))[0];
-                    }
-                }
-                return playableCards.sort((a,b) => getCardValue(a) - getCardValue(b))[0];
-            } else {
-                if (player.tricksWon < player.bid) {
-                     return playableCards.sort((a,b) => getCardValue(b) - getCardValue(a))[0];
-                } else {
-                     return playableCards.sort((a,b) => getCardValue(a) - getCardValue(b))[0];
-                }
-            }
+            const hand = player.hand, leadSuit = gameState.currentTrick.length > 0 ? gameState.currentTrick[0].card.suit : null;
+            const playable = hand.filter(c => !leadSuit || !hand.some(h => h.suit === leadSuit) || c.suit === leadSuit);
+            return playable.sort((a, b) => getCardValue(a) - getCardValue(b))[0];
         }
 
         // --- Scoring and End of Round/Game ---
         function endRound() {
-            let roundSummary = "Round Scores: ";
             gameState.players.forEach(player => {
-                let roundScore = 0;
-                if (player.tricksWon === player.bid) {
-                    roundScore = 10 + player.tricksWon;
-                }
-                player.score += roundScore;
-                roundSummary += `${player.name}: ${roundScore}, `;
+                if (player.tricksWon === player.bid) player.score += 10 + player.tricksWon;
             });
-            
-            showMessage(roundSummary.slice(0, -2));
-            updateUI();
-            
+            updateUI(true);
             setTimeout(startNewRound, 4000);
         }
 
         function endGame() {
-             const sortedPlayers = [...gameState.players].sort((a, b) => b.score - a.score);
-             const winner = sortedPlayers[0];
-             document.getElementById('winner-announcement').textContent = `${winner.name} wins with ${winner.score} points!`;
-             
-             const finalScoresDiv = document.getElementById('final-scores');
-             finalScoresDiv.innerHTML = '';
-             sortedPlayers.forEach(p => {
-                 const pElem = document.createElement('p');
-                 pElem.className = 'text-lg';
-                 pElem.textContent = `${p.name}: ${p.score} points`;
-                 finalScoresDiv.appendChild(pElem);
-             });
-
-             gameOverModal.style.display = 'flex';
+            const sorted = [...gameState.players].sort((a, b) => b.score - a.score);
+            document.getElementById('winner-announcement').textContent = `${sorted[0].name} wins with ${sorted[0].score} points!`;
+            const scoresDiv = document.getElementById('final-scores');
+            scoresDiv.innerHTML = '';
+            sorted.forEach(p => {
+                const pElem = document.createElement('p');
+                pElem.className = 'text-lg';
+                pElem.textContent = `${p.name}: ${p.score} points`;
+                scoresDiv.appendChild(pElem);
+            });
+            gameOverModal.style.display = 'flex';
         }
 
-        // --- UI Updates ---
-        function updateUI() {
+        // --- UI & Animations ---
+        function updateUI(forceShowAll = false) {
             gameState.players.forEach((player, i) => {
-                const playerNum = i + 1;
-                document.getElementById(`player-${playerNum}-name`).textContent = player.name + (player.isAI ? " (AI)" : "");
-                document.getElementById(`player-${playerNum}-score`).textContent = player.score;
-                document.getElementById(`player-${playerNum}-bid`).textContent = player.bid !== null ? player.bid : '-';
-                document.getElementById(`player-${playerNum}-tricks`).textContent = player.tricksWon;
+                const pNum = i + 1;
+                document.getElementById(`player-${pNum}-name`).textContent = player.name + (player.isAI ? " (AI)" : "");
+                document.getElementById(`player-${pNum}-score`).textContent = player.score;
+                document.getElementById(`player-${pNum}-bid`).textContent = player.bid !== null ? player.bid : '-';
+                document.getElementById(`player-${pNum}-tricks`).textContent = player.tricksWon;
             });
 
+            mainHandArea.innerHTML = '';
+            const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+            if (!currentPlayer.isAI) {
+                currentPlayer.hand.forEach(card => mainHandArea.appendChild(createCardElement(card, false, currentPlayer, forceShowAll)));
+            }
+            
             document.getElementById('round-number').textContent = gameState.roundNumber;
             document.getElementById('trump-suit').innerHTML = `<span class="${['♥', '♦'].includes(gameState.trumpSuit) ? 'text-red-400' : 'text-slate-300'}">${gameState.trumpSuit}</span>`;
             document.getElementById('dealer-name').textContent = gameState.players[gameState.dealerIndex].name;
-
-            const player1HandDiv = document.getElementById('player-1-hand');
-            player1HandDiv.innerHTML = '';
-            const player1 = gameState.players[0];
-            if (player1) {
-                player1.hand.forEach(card => {
-                    player1HandDiv.appendChild(createCardElement(card, false));
-                });
-            }
             
-            document.getElementById('player-1-played-card').innerHTML = '';
-            document.getElementById('player-2-played-card').innerHTML = '';
-            document.getElementById('player-3-played-card').innerHTML = '';
-
+            ['1','2','3'].forEach(n => document.getElementById(`player-${n}-played-card`).innerHTML = '');
             gameState.currentTrick.forEach(play => {
-                const cardElem = createCardElement(play.card, true);
+                const cardElem = createCardElement(play.card, true, play.player, true);
                 document.getElementById(`player-${play.player.id + 1}-played-card`).appendChild(cardElem);
             });
+            updateActivePlayerUI();
         }
 
-        function createCardElement(card, isPlayed) {
+        function createCardElement(card, isPlayed, player, forceShow = false) {
             const cardDiv = document.createElement('div');
-            cardDiv.className = `card ${['♥', '♦'].includes(card.suit) ? 'red' : 'black'} ${isPlayed ? 'played-card' : ''}`;
-            
-            cardDiv.innerHTML = `
-                <div class="corner top-left">
-                    <span class="value">${card.value}</span>
-                    <span class="suit">${card.suit}</span>
-                </div>
-                <span class="center-suit">${card.suit}</span>
-                <div class="corner bottom-right">
-                    <span class="value">${card.value}</span>
-                    <span class="suit">${card.suit}</span>
-                </div>
-            `;
-
-            if (!isPlayed) {
-                cardDiv.onclick = () => handleCardClick(card.suit, card.value);
+            const showFace = forceShow || player.isAI || (player.id === gameState.currentPlayerIndex && gameState.humanPlayerHasViewedHand);
+            const vCode = card.value === '10' ? '0' : card.value.charAt(0);
+            const sCode = SUITS[card.suit];
+            const imageUrl = (!isPlayed && !showFace) ? CARD_BACK_URL : `https://deckofcardsapi.com/static/img/${vCode}${sCode}.png`;
+            cardDiv.style.backgroundImage = `url(${imageUrl})`;
+            cardDiv.className = `card ${isPlayed ? 'played-card' : ''}`;
+            cardDiv.dataset.suit = card.suit;
+            cardDiv.dataset.value = card.value;
+            if (!isPlayed && !player.isAI && player.id === gameState.currentPlayerIndex) {
+                cardDiv.onclick = () => handleCardClick(cardDiv);
             }
             return cardDiv;
         }
 
-        function showMessage(msg) {
-            messageBox.textContent = msg;
+        function showMessage(msg) { messageBox.textContent = msg; }
+
+        function showActionButton(text, callback) {
+            actionButton.textContent = text;
+            actionButton.style.display = 'block';
+            if (actionButtonClickHandler) actionButton.removeEventListener('click', actionButtonClickHandler);
+            actionButtonClickHandler = () => {
+                actionButton.style.display = 'none';
+                callback();
+            };
+            actionButton.addEventListener('click', actionButtonClickHandler);
+        }
+
+        function updateActivePlayerUI() {
+            for(let i = 0; i < gameState.numPlayers; i++) {
+                const infoBox = document.getElementById(`player-${i+1}-info`);
+                const player = gameState.players[i];
+                if(i === gameState.currentPlayerIndex && !player.isAI) {
+                    infoBox.classList.add('active-player');
+                } else {
+                    infoBox.classList.remove('active-player');
+                }
+            }
         }
 
         function enableCardSelection() {
-            document.querySelectorAll('#player-1-hand .card').forEach(card => {
-                card.classList.add('border-yellow-400','border-2');
+            const player = gameState.players[gameState.currentPlayerIndex];
+            if (!player || player.isAI) return;
+            const leadSuit = gameState.currentTrick.length > 0 ? gameState.currentTrick[0].card.suit : null;
+            const canFollowSuit = player.hand.some(c => c.suit === leadSuit);
+            mainHandArea.querySelectorAll('.card').forEach(el => {
+                const isPlayable = !leadSuit || !canFollowSuit || el.dataset.suit === leadSuit;
+                el.classList.toggle('playable-card', isPlayable);
+                el.classList.toggle('non-playable-card', !isPlayable);
             });
         }
         
         function disableCardSelection() {
-            document.querySelectorAll('#player-1-hand .card').forEach(card => {
-                card.classList.remove('border-yellow-400','border-2');
-                card.onclick = null;
+            mainHandArea.querySelectorAll('.card').forEach(c => c.classList.remove('playable-card', 'non-playable-card'));
+        }
+
+        async function animateDealing() {
+            document.getElementById('deck-pile').style.display = 'block';
+            const playerTargets = [
+                document.getElementById('player-1-info'),
+                document.getElementById('player-2-info'),
+                document.getElementById('player-3-info')
+            ];
+            const deckRect = document.getElementById('deck-pile').getBoundingClientRect();
+            const animationPromises = [];
+            for (let i = 0; i < gameState.roundCardCount; i++) {
+                for (let j = 0; j < gameState.numPlayers; j++) {
+                    const promise = new Promise(resolve => {
+                        const cardElem = document.createElement('div');
+                        cardElem.className = 'card';
+                        cardElem.style.backgroundImage = `url(${CARD_BACK_URL})`;
+                        cardElem.style.position = 'fixed';
+                        cardElem.style.left = `${deckRect.left}px`;
+                        cardElem.style.top = `${deckRect.top}px`;
+                        cardElem.style.zIndex = 100 + i * gameState.numPlayers + j;
+                        cardElem.style.transition = 'all 0.7s ease-out';
+                        document.body.appendChild(cardElem);
+
+                        const targetRect = playerTargets[j].getBoundingClientRect();
+                        const finalX = targetRect.left + (targetRect.width / 2) - 50;
+                        const finalY = targetRect.top + (targetRect.height / 2) - 75;
+
+                        setTimeout(() => {
+                            cardElem.style.left = `${finalX}px`;
+                            cardElem.style.top = `${finalY}px`;
+                            cardElem.style.transform = 'scale(0.5)';
+                            cardElem.style.opacity = '0';
+                        }, 75);
+
+                        cardElem.addEventListener('transitionend', () => { cardElem.remove(); resolve(); }, { once: true });
+                    });
+                    animationPromises.push(promise);
+                    await new Promise(res => setTimeout(res, 100));
+                }
+            }
+            await Promise.all(animationPromises);
+            document.getElementById('deck-pile').style.display = 'none';
+            updateUI();
+        }
+
+        function animateCardPlay(card, sourceElem, targetContainerId) {
+            return new Promise(resolve => {
+                const startRect = sourceElem.getBoundingClientRect();
+                const targetContainer = document.getElementById(targetContainerId);
+                const targetRect = targetContainer.getBoundingClientRect();
+                
+                const clone = document.createElement('div');
+                clone.className = 'card';
+                if (card) {
+                    const vCode = card.value === '10' ? '0' : card.value.charAt(0);
+                    const sCode = SUITS[card.suit];
+                    clone.style.backgroundImage = `url(https://deckofcardsapi.com/static/img/${vCode}${sCode}.png)`;
+                } else { // AI animation from info box
+                     clone.style.backgroundImage = `url(${CARD_BACK_URL})`;
+                }
+
+                clone.style.position = 'fixed';
+                clone.style.left = `${startRect.left}px`;
+                clone.style.top = `${startRect.top}px`;
+                clone.style.zIndex = '1000';
+                clone.style.transition = 'all 0.7s ease-in-out';
+                document.body.appendChild(clone);
+
+                if (sourceElem.classList.contains('card')) {
+                    sourceElem.style.opacity = '0';
+                }
+
+                requestAnimationFrame(() => {
+                    clone.style.left = `${targetRect.left + (targetRect.width / 2) - 50}px`;
+                    clone.style.top = `${targetRect.top + (targetRect.height / 2) - 75}px`;
+                });
+                
+                clone.addEventListener('transitionend', () => { 
+                    clone.remove(); 
+                    if (sourceElem.classList.contains('card')) {
+                        sourceElem.style.opacity = '1';
+                    }
+                    resolve(); 
+                }, { once: true });
             });
+        }
+
+        function animateTrickWin(winner) {
+            const winnerInfoBox = document.getElementById(`player-${winner.id + 1}-info`);
+            const winnerRect = winnerInfoBox.getBoundingClientRect();
+            const animationPromises = [];
+            document.querySelectorAll('.played-card-container .card').forEach(cardElement => {
+                const promise = new Promise(resolve => {
+                    const startRect = cardElement.getBoundingClientRect();
+                    const clone = cardElement.cloneNode(true);
+                    clone.style.position = 'fixed';
+                    clone.style.left = `${startRect.left}px`;
+                    clone.style.top = `${startRect.top}px`;
+                    clone.style.zIndex = '1000';
+                    clone.style.transition = 'all 1s ease-in';
+                    document.body.appendChild(clone);
+                    cardElement.style.opacity = '0';
+                    requestAnimationFrame(() => {
+                        clone.style.left = `${winnerRect.left + winnerRect.width / 2 - 50}px`;
+                        clone.style.top = `${winnerRect.top + winnerRect.height / 2 - 75}px`;
+                        clone.style.transform = 'scale(0.1)';
+                        clone.style.opacity = '0';
+                    });
+                    clone.addEventListener('transitionend', () => { clone.remove(); resolve(); }, { once: true });
+                });
+                animationPromises.push(promise);
+            });
+            return Promise.all(animationPromises);
         }
     </script>
 </body>
