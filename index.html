@@ -16,19 +16,18 @@
             overflow: hidden;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            transform: scale(0.75);
+            transform: scale(0.90);
         }
         .card {
             width: 100px;
             height: 150px;
             border-radius: 10px;
-            background-size: cover;
-            background-position: center;
+            background-color: #f8fafc;
             cursor: pointer;
             transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.6s cubic-bezier(0.25, 1, 0.5, 1), filter 0.3s ease;
             position: relative;
             box-shadow: 0 5px 10px rgba(0,0,0,0.4);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid #94a3b8;
         }
         .card:hover {
             transform: translateY(-12px) scale(1.08);
@@ -208,9 +207,9 @@
         <h1 class="text-7xl font-bold mb-4 text-slate-50" style="text-shadow: 3px 3px 10px rgba(0,0,0,0.6);">Kachuful</h1>
         <p class="text-slate-400 mb-12 text-lg">A Traditional Gujarati Trick-Taking Game</p>
         <div class="space-y-5">
-            <button onclick="handleStartGame(1, this)" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-8 rounded-lg text-xl w-80 shadow-lg transition-transform transform hover:scale-105">1 Player vs AI</button>
-            <button onclick="handleStartGame(2, this)" class="bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-8 rounded-lg text-xl w-80 shadow-lg transition-transform transform hover:scale-105">2 Players vs AI</button>
-            <button onclick="handleStartGame(3, this)" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-4 px-8 rounded-lg text-xl w-80 shadow-lg transition-transform transform hover:scale-105">3 Players</button>
+            <button onclick="startGame(1)" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-8 rounded-lg text-xl w-80 shadow-lg transition-transform transform hover:scale-105">1 Player vs AI</button>
+            <button onclick="startGame(2)" class="bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-8 rounded-lg text-xl w-80 shadow-lg transition-transform transform hover:scale-105">2 Players vs AI</button>
+            <button onclick="startGame(3)" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-4 px-8 rounded-lg text-xl w-80 shadow-lg transition-transform transform hover:scale-105">3 Players</button>
         </div>
     </div>
 
@@ -286,11 +285,9 @@
     <script>
         // --- Game Constants and State ---
         const SUITS = { '♠': 'S', '♦': 'D', '♣': 'C', '♥': 'H' };
-        const VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
-        const DISPLAY_VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+        const VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
         const TRUMP_CYCLE = ['♠', '♦', '♣', '♥'];
         const PLAYERS_CONFIG = { 3: { cards: 10, rounds: 19 } };
-        const CARD_BACK_URL = 'https://deckofcardsapi.com/static/img/back.png';
 
         let gameState = {};
         let bidHandler;
@@ -313,51 +310,9 @@
 
         // --- Game Setup & Asset Loading ---
         const delay = ms => new Promise(res => setTimeout(res, ms));
-        function createDeck() { return Object.keys(SUITS).flatMap(suit => DISPLAY_VALUES.map(value => ({ suit, value }))); }
-        function getCardValue(card) { return DISPLAY_VALUES.indexOf(card.value); }
+        function createDeck() { return Object.keys(SUITS).flatMap(suit => VALUES.map(value => ({ suit, value }))); }
+        function getCardValue(card) { return VALUES.indexOf(card.value); }
         
-        function preloadImages() {
-            const promises = [];
-            const deck = createDeck();
-            deck.forEach(card => {
-                const promise = new Promise((resolve, reject) => {
-                    const img = new Image();
-                    const valueCode = card.value === '10' ? '0' : card.value.charAt(0);
-                    const suitCode = SUITS[card.suit];
-                    img.src = `https://deckofcardsapi.com/static/img/${valueCode}${suitCode}.png`;
-                    img.onload = resolve;
-                    img.onerror = () => reject(new Error(`Failed to load ${img.src}`));
-                });
-                promises.push(promise);
-            });
-
-            const backPromise = new Promise((resolve, reject) => {
-                const img = new Image();
-                img.src = CARD_BACK_URL;
-                img.onload = resolve;
-                img.onerror = () => reject(new Error(`Failed to load ${img.src}`));
-            });
-            promises.push(backPromise);
-
-            return Promise.all(promises);
-        }
-
-        async function handleStartGame(numPlayers, button) {
-            const originalText = button.textContent;
-            button.textContent = 'Loading...';
-            button.disabled = true;
-
-            try {
-                await preloadImages();
-                startGame(numPlayers);
-            } catch (error) {
-                console.error("Failed to preload card images.", error);
-                alert("Could not load all card images. Please check your internet connection and try again.");
-                button.textContent = originalText;
-                button.disabled = false;
-            }
-        }
-
         function startGame(numHumanPlayers) {
             mainMenu.style.display = 'none';
             gameBoard.style.display = 'flex';
@@ -664,17 +619,40 @@
             updateActivePlayerUI();
         }
 
+        function getCardSVG(card, showFace) {
+            if (!showFace) {
+                return `<svg viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="150" rx="10" fill="#1e3a8a"/><rect x="5" y="5" width="90" height="140" rx="5" fill="none" stroke="#60a5fa" stroke-width="3"/><path d="M20 20 L80 130 M80 20 L20 130" stroke="#60a5fa" stroke-width="5"/></svg>`;
+            }
+
+            const color = (card.suit === '♥' || card.suit === '♦') ? '#ef4444' : '#1e293b';
+            const suitIcon = {
+                '♥': '♥', '♦': '♦', '♠': '♠', '♣': '♣'
+            }[card.suit];
+
+            return `
+                <svg viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="100" height="150" rx="10" fill="white"/>
+                    <text x="10" y="25" font-family="Merriweather, serif" font-size="20" fill="${color}" text-anchor="middle">${card.value}</text>
+                    <text x="10" y="45" font-family="Merriweather, serif" font-size="20" fill="${color}" text-anchor="middle">${suitIcon}</text>
+                    <text x="50" y="90" font-family="Merriweather, serif" font-size="50" fill="${color}" text-anchor="middle">${suitIcon}</text>
+                    <g transform="rotate(180, 50, 75)">
+                        <text x="10" y="25" font-family="Merriweather, serif" font-size="20" fill="${color}" text-anchor="middle">${card.value}</text>
+                        <text x="10" y="45" font-family="Merriweather, serif" font-size="20" fill="${color}" text-anchor="middle">${suitIcon}</text>
+                    </g>
+                </svg>
+            `;
+        }
+
         function createCardElement(card, isPlayed, player, forceShow = false) {
             const cardDiv = document.createElement('div');
             const showFace = forceShow || player.isAI || (player.id === gameState.currentPlayerIndex && gameState.humanPlayerHasViewedHand);
-            const vCode = card.value === '10' ? '0' : card.value.charAt(0);
-            const sCode = SUITS[card.suit];
-            const imageUrl = (!isPlayed && !showFace) ? CARD_BACK_URL : `https://deckofcardsapi.com/static/img/${vCode}${sCode}.png`;
-            cardDiv.style.backgroundImage = `url(${imageUrl})`;
+            
+            cardDiv.innerHTML = getCardSVG(card, showFace);
             cardDiv.className = `card ${isPlayed ? 'played-card' : ''}`;
             cardDiv.dataset.suit = card.suit;
             cardDiv.dataset.value = card.value;
-            if (!isPlayed && !player.isAI && player.id === gameState.currentPlayerIndex) {
+            
+            if (!isPlayed && !player.isAI && player.id === gameState.currentPlayerIndex && showFace && !gameState.isBiddingPhase) {
                 cardDiv.onclick = () => handleCardClick(cardDiv);
             }
             return cardDiv;
@@ -754,7 +732,7 @@
                     const promise = new Promise(resolve => {
                         const cardElem = document.createElement('div');
                         cardElem.className = 'card';
-                        cardElem.style.backgroundImage = `url(${CARD_BACK_URL})`;
+                        cardElem.innerHTML = getCardSVG({}, false);
                         cardElem.style.position = 'fixed';
                         cardElem.style.left = `${deckRect.left}px`;
                         cardElem.style.top = `${deckRect.top}px`;
@@ -792,13 +770,7 @@
                 
                 const clone = document.createElement('div');
                 clone.className = 'card';
-                if (card) {
-                    const vCode = card.value === '10' ? '0' : card.value.charAt(0);
-                    const sCode = SUITS[card.suit];
-                    clone.style.backgroundImage = `url(https://deckofcardsapi.com/static/img/${vCode}${sCode}.png)`;
-                } else { // AI animation from info box
-                     clone.style.backgroundImage = `url(${CARD_BACK_URL})`;
-                }
+                clone.innerHTML = getCardSVG(card, true);
 
                 clone.style.position = 'fixed';
                 clone.style.left = `${startRect.left}px`;
