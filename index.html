@@ -15,7 +15,6 @@
             overflow: hidden;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            transform: scale(0.85);
         }
         .card {
             width: 100px;
@@ -599,12 +598,9 @@
                 return isWinner;
             });
             
-            // Basic Strategy:
-            // 1. If AI can win, play the lowest winning card.
             if (trickWinningCards.length > 0) {
                 return trickWinningCards.sort((a,b) => getCardValue(a) - getCardValue(b))[0];
             }
-            // 2. If can't win, play the lowest card possible.
             return playable.sort((a, b) => getCardValue(a) - getCardValue(b))[0];
         }
 
@@ -632,7 +628,8 @@
         }
 
         // --- UI & Animations ---
-        function updateUI(forceShowAll = false) {
+        function updateUI(forceShowAllHands = false) {
+            // Update player info boxes
             gameState.players.forEach((player, i) => {
                 const pNum = i + 1;
                 document.getElementById(`player-${pNum}-name`).textContent = player.name + (player.isAI ? " (AI)" : "");
@@ -641,31 +638,34 @@
                 document.getElementById(`player-${pNum}-tricks`).textContent = player.tricksWon;
             });
 
+            // Clear and render the main hand area
             mainHandArea.innerHTML = '';
-            const humanPlayer = gameState.players.find(p => !p.isAI);
-            if (humanPlayer) {
-                const isMyTurn = humanPlayer.id === gameState.currentPlayerIndex;
-                const shouldShow = forceShowAll || gameState.isBiddingPhase || (isMyTurn && gameState.humanPlayerHasViewedHand) || gameState.numHumanPlayers > 1;
-                
-                // For multi-human games, we only show the current human player's hand
-                if (gameState.numHumanPlayers > 1) {
-                    if (isMyTurn && gameState.humanPlayerHasViewedHand) {
-                         humanPlayer.hand.forEach(card => mainHandArea.appendChild(createCardElement(card, false, humanPlayer, true)));
-                    }
-                } else { // For single human player game
-                     humanPlayer.hand.forEach(card => mainHandArea.appendChild(createCardElement(card, false, humanPlayer, shouldShow)));
+            const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+            
+            // Only render a hand if the current player is human
+            if (currentPlayer && !currentPlayer.isAI) {
+                // Determine if the hand should be visible (face up)
+                const shouldShowFace = forceShowAllHands || gameState.humanPlayerHasViewedHand;
+
+                if (shouldShowFace) {
+                    currentPlayer.hand.forEach(card => {
+                        mainHandArea.appendChild(createCardElement(card, false, currentPlayer, true));
+                    });
                 }
             }
             
+            // Update general game info
             document.getElementById('round-number').textContent = gameState.roundNumber;
             document.getElementById('trump-suit').innerHTML = `<span class="${['♥', '♦'].includes(gameState.trumpSuit) ? 'text-red-400' : 'text-slate-300'}">${gameState.trumpSuit || 'N/A'}</span>`;
             document.getElementById('dealer-name').textContent = gameState.players[gameState.dealerIndex].name;
             
+            // Update played cards on the table
             ['1','2','3'].forEach(n => document.getElementById(`player-${n}-played-card`).innerHTML = '');
             gameState.currentTrick.forEach(play => {
                 const cardElem = createCardElement(play.card, true, play.player, true);
                 document.getElementById(`player-${play.player.id + 1}-played-card`).appendChild(cardElem);
             });
+
             updateActivePlayerUI();
         }
 
@@ -681,9 +681,7 @@
             }
 
             const color = (card.suit === '♥' || card.suit === '♦') ? '#ef4444' : '#1e293b';
-            const suitIcon = {
-                '♥': '♥', '♦': '♦', '♠': '♠', '♣': '♣'
-            }[card.suit];
+            const suitIcon = { '♥': '♥', '♦': '♦', '♠': '♠', '♣': '♣' }[card.suit];
 
             return `
                 <svg viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg">
@@ -699,33 +697,19 @@
             `;
         }
         
-        function createCardElement(card, isPlayed, player, forceShow = false) {
+        function createCardElement(card, isPlayed, player, showFace = false) {
             const cardDiv = document.createElement('div');
-            // Logic to determine if card face should be shown
-            let showFace = forceShow;
-            if (gameState.numHumanPlayers > 1) {
-                 // In multi-human games, only show the current human player's hand when it's their turn AND they've chosen to see it.
-                 if (!player.isAI && player.id === gameState.currentPlayerIndex && gameState.humanPlayerHasViewedHand) {
-                     showFace = true;
-                 }
-            } else {
-                 // Original logic for single human player
-                 if (!player.isAI) {
-                     showFace = true;
-                 }
-            }
-
             cardDiv.innerHTML = getCardSVG(card, showFace);
             cardDiv.className = `card ${isPlayed ? 'played-card' : ''}`;
             cardDiv.dataset.suit = card.suit;
             cardDiv.dataset.value = card.value;
             
+            // Add click handler ONLY if it's playable
             if (!isPlayed && !player.isAI && player.id === gameState.currentPlayerIndex && showFace && !gameState.isBiddingPhase) {
                 cardDiv.onclick = () => handleCardClick(cardDiv);
             }
             return cardDiv;
         }
-
 
         function showMessage(msg) { messageBox.textContent = msg; }
         
